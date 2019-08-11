@@ -29,7 +29,7 @@ signal video_on_H, video_on_V : std_logic;
 signal Horiz_Sync_int, Vert_Sync_int : std_logic;
 signal Color_map, Bar_col_count : std_logic_vector(5 DOWNTO 0);
 signal Bar_num :std_logic_vector(4 DOWNTO 0);
-signal alt_scan, half_pixel, clock_enable : std_logic;
+signal half_pixel, clock_enable : std_logic;
 
 begin           
 -- A 2X pixel clock is used to produce more colors by turning color signals on and off
@@ -47,9 +47,9 @@ begin
 
 -- Table of 27 Possible Colors
 Color_palette(0) <= "000000";
-Color_palette(1) <= "000100";
-Color_palette(2) <= "100100";
-Color_palette(3) <= "000010";
+Color_palette(1) <= "000001";
+Color_palette(2) <= "000011";
+Color_palette(3) <= "000111";
 Color_palette(4) <= "010010";
 Color_palette(5) <= "000001";
 Color_palette(6) <= "001001";
@@ -94,7 +94,7 @@ Begin
    ELSE Bar_num <="00000"; END IF;
  END IF;
 -- Gives each color bar a different color
-Color_map <= Color_palette(conv_integer(Bar_num));
+Color_map <= Color_palette((conv_integer(Bar_num) + (conv_integer(V_count)/32)) mod 4);
  IF H_Count=0 THEN Half_Pixel <= '0';
  ELSE
 -- Generates 1-0 or 0-1 for each pixel in 50% color mode
@@ -106,7 +106,7 @@ Color_map <= Color_palette(conv_integer(Bar_num));
  IF Color_map(2)='1' THEN 
 	IF Color_map(5) = '0'  THEN Red_Data <= '1'; 
 -- 50% Red
-	ELSE Red_Data <= alt_scan XOR Half_Pixel XOR V_count(0); 
+	ELSE Red_Data <= Half_Pixel XOR V_count(0);
 	END IF;
  ELSE
 	Red_Data <= '0';
@@ -114,7 +114,7 @@ Color_map <= Color_palette(conv_integer(Bar_num));
  IF Color_map(1)='1' THEN 
 	IF Color_map(4) = '0'  THEN Green_Data <= '1';
 -- 50% Green 
-	ELSE Green_Data <= alt_scan XOR Half_Pixel XOR V_count(0); 
+	ELSE Green_Data <= Half_Pixel XOR V_count(0);
 	END IF;
  ELSE
 	Green_Data <= '0';
@@ -122,7 +122,7 @@ Color_map <= Color_palette(conv_integer(Bar_num));
  IF Color_map(0)='1' THEN 
 	IF Color_map(3) = '0'  THEN Blue_Data <= '1';
 -- 50% Blue 
-	ELSE Blue_Data <= alt_scan XOR Half_Pixel XOR V_count(0); 
+	ELSE Blue_Data <= Half_Pixel XOR V_count(0);
 	END IF;
  ELSE
 	Blue_Data <= '0';
@@ -138,12 +138,6 @@ Color_map <= Color_palette(conv_integer(Bar_num));
 END IF;
 end process Color_COMPUTE;
 
-
-process
-begin
-	wait until Vert_Sync'event and Vert_Sync = '1';
-			alt_scan <= NOT alt_scan;
-end process;
 
 --Generate Horizontal and Vertical Timing Signals for Video Signal
 --For details see Rapid Prototyping of Digital Systems Chapter 9

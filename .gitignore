@@ -1,3 +1,8 @@
 *.sof
 *.svf
 11.0sp1_quartus_free_linux.sh
+*.rpt
+*.done
+*.pin
+*.summary
+*.pof
