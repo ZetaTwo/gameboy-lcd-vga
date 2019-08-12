@@ -7,14 +7,16 @@ targets:
 install:
 	time sudo docker build  --network=host -t quartus dockerizedBuildSystem
 
-run:
-	sudo docker run --net=host --env DISPLAY=$$DISPLAY --volume="$$HOME/.Xauthority:/root/.Xauthority:rw" quartus /quartus/quartus/bin/quartus
+bash:
+	sudo docker run -it --net=host --volume="$$PWD/src/:/src/:rw" quartus bash
+
+quartus_gui:
+	sudo docker run --net=host --volume="$$PWD/src/:/src/:rw" --env DISPLAY=$$DISPLAY --volume="$$HOME/.Xauthority:/root/.Xauthority:rw" quartus bash -c '/quartus/quartus/bin/quartus /src/*.qpf'
 
 xterm:
-	sudo docker run --net=host --env DISPLAY=$$DISPLAY --volume="$$HOME/.Xauthority:/root/.Xauthority:rw" quartus xterm
+	sudo docker run --net=host --volume="$$PWD/src/:/src/:rw" --env DISPLAY=$$DISPLAY --volume="$$HOME/.Xauthority:/root/.Xauthority:rw" quartus xterm
 
 flash:
-	sudo docker cp eloquent_lamarr:/tmp/color_bar.svf .
-	scp color_bar.svf pimento.local:/tmp/
-	ssh pimento.local /home/pi/JLink_Linux_V648b_arm/JTAGLoadExe /tmp/color_bar.svf 
+	scp src/*.svf pimento.local:/tmp/toflash.svf
+	ssh pimento.local /home/pi/JLink_Linux_V648b_arm/JTAGLoadExe /tmp/toflash.svf
 

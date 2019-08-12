@@ -6,3 +6,5 @@
 *.pin
 *.summary
 *.pof
+src/db
+src/incremental_db/
