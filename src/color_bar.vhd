@@ -19,7 +19,7 @@ end Color_Bar;
 
 architecture behavior of Color_Bar is
 
-TYPE color IS ARRAY ( 0 TO 26 ) OF STD_LOGIC_VECTOR( 5 DOWNTO 0 );
+TYPE color IS ARRAY ( 0 TO 3 ) OF STD_LOGIC_VECTOR( 5 DOWNTO 0 );
 SIGNAL color_palette			: color;
 
 -- Video Display Signals   
@@ -50,31 +50,6 @@ Color_palette(0) <= "000000";
 Color_palette(1) <= "000001";
 Color_palette(2) <= "000011";
 Color_palette(3) <= "000111";
-Color_palette(4) <= "010010";
-Color_palette(5) <= "000001";
-Color_palette(6) <= "001001";
-Color_palette(7) <= "000110";
-Color_palette(8) <= "100110";
-Color_palette(9) <= "010110";
-Color_palette(10) <= "110110";
-Color_palette(11) <= "000101";
-Color_palette(12) <= "100101";
-Color_palette(13) <= "001101";
-Color_palette(14) <= "101101";
-Color_palette(15) <= "000011";
-Color_palette(16) <= "010011";
-Color_palette(17) <= "001011";
-Color_palette(18) <= "011011";
-Color_palette(19) <= "000111";
-Color_palette(20) <= "100111";
-Color_palette(21) <= "010111";
-Color_palette(22) <= "001111";
-Color_palette(23) <= "110111";
-Color_palette(24) <= "101111";
-Color_palette(25) <= "011111";
-Color_palette(26) <= "111111";
-
-
 
 -- video_on turns off pixel color data when not in the pixel view area
 video_on <= video_on_H and video_on_V;
@@ -94,7 +69,7 @@ Begin
    ELSE Bar_num <="00000"; END IF;
  END IF;
 -- Gives each color bar a different color
-Color_map <= Color_palette((conv_integer(Bar_num) + (conv_integer(V_count)/32)) mod 4);
+Color_map <= Color_palette((conv_integer(H_Count)/2 + (conv_integer(V_count)/2)) mod 4);
  IF H_Count=0 THEN Half_Pixel <= '0';
  ELSE
 -- Generates 1-0 or 0-1 for each pixel in 50% color mode
