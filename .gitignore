@@ -8,3 +8,5 @@
 *.pof
 src/db
 src/incremental_db/
+*.smsg
+*.bak

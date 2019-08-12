@@ -13,7 +13,7 @@ entity Color_Bar is
 
    port( signal Clock_48Mhz : in std_logic;
         signal Red,Green,Blue : out std_logic;
-        signal Horiz_sync,Vert_sync : inout std_logic);
+        signal Horiz_sync,Vert_sync : out std_logic);
        		
 end Color_Bar;
 
