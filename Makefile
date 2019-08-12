@@ -20,6 +20,9 @@ quartus_gui:
 xterm:
 	$(DOCKER) $(XFLAGS) quartus xterm
 
+compile:
+	$(DOCKER) -ti quartus bash -c '/quartus/quartus/bin/quartus_cmd /src/color_bar.qpf -c color_bar'
+
 flash:
 	$(DOCKER) quartus bash -c '/quartus/quartus/bin/quartus_cpf -c -q 10MHz -g 3.3 -n p /src/color_bar.cdf /src/color_bar.svf'
 	scp src/*.svf pimento.local:/tmp/toflash.svf
