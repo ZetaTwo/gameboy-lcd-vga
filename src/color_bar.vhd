@@ -19,7 +19,7 @@ end Color_Bar;
 
 architecture behavior of Color_Bar is
 
-TYPE color IS ARRAY ( 0 TO 3 ) OF STD_LOGIC_VECTOR( 5 DOWNTO 0 );
+TYPE color IS ARRAY ( 0 TO 3 ) OF STD_LOGIC_VECTOR( 2 DOWNTO 0 );
 SIGNAL color_palette			: color;
 
 -- Video Display Signals   
@@ -27,9 +27,11 @@ signal H_count,V_count: std_logic_vector(10 Downto 0);
 signal Red_Data, Green_Data, Blue_Data, video_on : std_logic;
 signal video_on_H, video_on_V : std_logic;
 signal Horiz_Sync_int, Vert_Sync_int : std_logic;
-signal Color_map, Bar_col_count : std_logic_vector(5 DOWNTO 0);
+signal Bar_col_count : std_logic_vector(5 DOWNTO 0);
+signal Color_map : std_logic_vector(2 DOWNTO 0);
+
 signal Bar_num :std_logic_vector(4 DOWNTO 0);
-signal half_pixel, clock_enable : std_logic;
+signal Clock_24Mhz : std_logic;
 
 begin           
 -- A 2X pixel clock is used to produce more colors by turning color signals on and off
@@ -41,21 +43,18 @@ begin
 -- Bit 0 Blue
 -- Bit 1 Green
 -- Bit 2 Red
--- Bit 3 Light (50%) Blue with Bit 0 set
--- Bit 4 Light (50%) Green with Bit 1 set
--- Bit 5 Light (50%) Red with Bit 2 set
 
--- Table of 27 Possible Colors
-Color_palette(0) <= "000000";
-Color_palette(1) <= "000001";
-Color_palette(2) <= "000011";
-Color_palette(3) <= "000111";
+-- Table of 4 Possible Colors
+Color_palette(0) <= "000"; -- black
+Color_palette(1) <= "001"; -- blue
+Color_palette(2) <= "011"; -- cyan
+Color_palette(3) <= "111"; -- white
 
 -- video_on turns off pixel color data when not in the pixel view area
 video_on <= video_on_H and video_on_V;
 
 -- This process computes a color to each pixel as the image is scanned by the monitor
--- no pixel memory is used. The bar number is used to select a color.
+-- no pixel memory is used.
 
 Color_COMPUTE: Process (clock_48Mhz)
 Begin
@@ -68,45 +67,31 @@ Begin
    IF Bar_num < 26 THEN Bar_num <= Bar_num + 1;
    ELSE Bar_num <="00000"; END IF;
  END IF;
--- Gives each color bar a different color
+
+-- Gameboy display is 160 x 144 pixels
+---one logical pixel is 3x3 VGA pixels, so screen size is 480x432
+--- total VGA size is 640x480
+IF H_Count < 480 and V_Count < 432 THEN
+Color_map <= Color_palette((conv_integer(H_Count)/8 + (conv_integer(V_count)/4)) mod 4);
+ELSE
+-- Fill up the background
 Color_map <= Color_palette((conv_integer(H_Count)/2 + (conv_integer(V_count)/2)) mod 4);
- IF H_Count=0 THEN Half_Pixel <= '0';
- ELSE
--- Generates 1-0 or 0-1 for each pixel in 50% color mode
- Half_Pixel <= NOT Half_Pixel;
- END IF;
+END IF;
+
 -- Set each RGB color signal to 100%(on), 50%(1-0 with 2X clock), or 0%(off)
 -- A 0-1 pixel color is reversed to 1-0 on alternate rows and
 -- alternate scans to reduce flicker.
- IF Color_map(2)='1' THEN 
-	IF Color_map(5) = '0'  THEN Red_Data <= '1'; 
--- 50% Red
-	ELSE Red_Data <= Half_Pixel XOR V_count(0);
-	END IF;
- ELSE
-	Red_Data <= '0';
- END IF;
- IF Color_map(1)='1' THEN 
-	IF Color_map(4) = '0'  THEN Green_Data <= '1';
--- 50% Green 
-	ELSE Green_Data <= Half_Pixel XOR V_count(0);
-	END IF;
- ELSE
-	Green_Data <= '0';
- END IF;
- IF Color_map(0)='1' THEN 
-	IF Color_map(3) = '0'  THEN Blue_Data <= '1';
--- 50% Blue 
-	ELSE Blue_Data <= Half_Pixel XOR V_count(0);
-	END IF;
- ELSE
-	Blue_Data <= '0';
- END IF;
+
+	Red_Data <= Color_map(2);
+	Green_Data <= Color_map(1);
+	Blue_Data <= Color_map(0);
+
 -- turn off color (black) at screen edges and during retrace with video_on
 -- feed final outputs through registers to adjust for any timing delays
  Red <=   Red_Data and video_on;
  Green <= Green_Data and video_on;
  Blue <=  Blue_Data and video_on;
+
  Horiz_Sync <= Horiz_Sync_int;
  Vert_Sync <= Vert_Sync_int;
 
@@ -122,14 +107,14 @@ Wait until(Clock_48Mhz'Event) and (Clock_48Mhz='1');
 -- Clock enable used for a 24Mhz video clock rate
 -- 640 by 480 display mode needs close to a 25Mhz pixel clock
 -- 24Mhz should work on most new monitors
-clock_enable <= NOT clock_enable;
+Clock_24Mhz <= NOT Clock_24Mhz;
 -- H_count counts pixels (640 + extra time for sync signals)
 --
 --   <-Clock out RGB Pixel Row Data ->   <-H Sync->
 --   ------------------------------------__________--------
 --   0                           640   659       755    799
 --
-If clock_enable = '1' then
+If Clock_24Mhz = '1' then
 If (H_count >= 799) then
    H_count <= B"00000000000";
 Else
