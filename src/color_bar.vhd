@@ -21,8 +21,8 @@ architecture behavior of Color_Bar is
 
 TYPE color IS ARRAY ( 0 TO 3 ) OF STD_LOGIC_VECTOR( 2 DOWNTO 0 );
 
-TYPE screenLine is ARRAY(0 to 140) of STD_LOGIC_VECTOR(1 DOWNTO 0);
-type screenArray is ARRAY(0 to 140) of screenLine;
+TYPE screenLine is ARRAY(0 to 159) of STD_LOGIC_VECTOR(1 DOWNTO 0);
+type screenArray is ARRAY(0 to 143) of screenLine;
 
 SIGNAL color_palette			: color;
 
@@ -31,11 +31,12 @@ signal H_count,V_count: std_logic_vector(10 Downto 0);
 signal Red_Data, Green_Data, Blue_Data, video_on : std_logic;
 signal video_on_H, video_on_V : std_logic;
 signal Horiz_Sync_int, Vert_Sync_int : std_logic;
-signal Bar_col_count : std_logic_vector(5 DOWNTO 0);
+signal vpixCount, hpixCount : std_logic_vector(1 DOWNTO 0);
 signal Color_map : std_logic_vector(2 DOWNTO 0);
-
-signal Bar_num :std_logic_vector(4 DOWNTO 0);
+signal hpix, vpix : std_logic_vector(7 DOWNTO 0);
 signal Clock_24Mhz : std_logic;
+
+signal vinrange, hinrange : std_logic;
 
 signal screenBuf : screenArray;
 
@@ -56,7 +57,12 @@ Color_palette(1) <= "001"; -- blue
 Color_palette(2) <= "011"; -- cyan
 Color_palette(3) <= "111"; -- white
 
+screenBuf(0)(0) <= "11";
 screenBuf(10)(10) <= "11";
+
+screenBuf(100)(100) <= "01";
+screenBuf(143)(159) <= "10";
+
 
 -- video_on turns off pixel color data when not in the pixel view area
 video_on <= video_on_H and video_on_V;
@@ -64,26 +70,24 @@ video_on <= video_on_H and video_on_V;
 -- This process computes a color to each pixel as the image is scanned by the monitor
 -- no pixel memory is used.
 
+CLOCK_DIVIDE: Process
+Begin
+Wait until(Clock_48Mhz'Event) and (Clock_48Mhz='1');
+	Clock_24Mhz <= NOT Clock_24Mhz;
+end process CLOCK_DIVIDE;
+
 Color_COMPUTE: Process (clock_48Mhz)
 Begin
  IF (clock_48Mhz'event) and (clock_48Mhz='1') Then
--- This code uses col counters to count off 27 color bars across the screen
- IF  H_Count=799 THEN Bar_Col_count <= "000000"; Bar_num <="00000"; 
- ELSIF Bar_col_count <46 THEN Bar_col_count <= Bar_col_count + 1;
- ELSE
-   Bar_col_count <= "000000";
-   IF Bar_num < 26 THEN Bar_num <= Bar_num + 1;
-   ELSE Bar_num <="00000"; END IF;
- END IF;
-
+ 
 -- Gameboy display is 160 x 144 pixels
 ---one logical pixel is 3x3 VGA pixels, so screen size is 480x432
 --- total VGA size is 640x480
-IF H_Count < 480 and V_Count < 432 THEN
-Color_map <= Color_palette(conv_integer(screenBuf(conv_integer(H_Count)/4)(conv_integer(V_count)/4)));
+IF hinrange = '1' and vinrange = '1' THEN
+	Color_map <= Color_palette(conv_integer(screenBuf(conv_integer(vpix))(conv_integer(hpix))));
 ELSE
 -- Fill up the background
-Color_map <= Color_palette((conv_integer(H_Count)/2 + (conv_integer(V_count)/2)) mod 4);
+	Color_map <= Color_palette((conv_integer(H_Count)/2 + (conv_integer(V_count)/2)) mod 4);
 END IF;
 
 -- Set each RGB color signal to 100%(on), 50%(1-0 with 2X clock), or 0%(off)
@@ -111,22 +115,38 @@ end process Color_COMPUTE;
 --For details see Rapid Prototyping of Digital Systems Chapter 9
 VIDEO_DISPLAY: Process
 Begin
-Wait until(Clock_48Mhz'Event) and (Clock_48Mhz='1');
+Wait until(Clock_24Mhz'Event) and (Clock_24Mhz='1');
 -- Clock enable used for a 24Mhz video clock rate
 -- 640 by 480 display mode needs close to a 25Mhz pixel clock
 -- 24Mhz should work on most new monitors
-Clock_24Mhz <= NOT Clock_24Mhz;
 -- H_count counts pixels (640 + extra time for sync signals)
 --
 --   <-Clock out RGB Pixel Row Data ->   <-H Sync->
 --   ------------------------------------__________--------
 --   0                           640   659       755    799
 --
-If Clock_24Mhz = '1' then
 If (H_count >= 799) then
-   H_count <= B"00000000000";
+	H_count <= B"00000000000";
 Else
    H_count <= H_count + 1;
+	
+	
+	IF H_Count = 0 THEN
+		-- start of logical screen reached
+		hpixcount <= "00";
+		hpix <="00000000";
+		hinrange <= '1';
+	ELSIF hpixcount = 2 THEN
+		-- divide by three counter reached tick
+		hpixcount <= "00";
+		IF hpix < 159 THEN
+			hpix <= hpix + 1;
+		ELSE
+			hinrange <= '0';
+		END IF;
+	ELSE
+		hpixcount <= hpixcount + 1;
+	END IF;
 End if;
 
 --Generate Horizontal Sync Signal
@@ -146,7 +166,23 @@ If (V_count >= 524) and (H_count >= 699) then
    V_count <= B"00000000000";
 Else If (H_count = 699) Then
    V_count <= V_count + 1;
-End if;
+	
+	IF V_Count = 0 THEN
+		-- start of logical screen reached
+		vpixcount <= "00";
+		vpix <="00000000";
+		vinrange <= '1';
+	ELSIF vpixcount = 2 THEN
+		-- divide by three counter reached tick
+		vpixcount <= "00";
+		IF vpix < 143 THEN
+			vpix <= vpix + 1;
+		ELSE
+			vinrange <= '0';
+		END IF;
+	ELSE
+		vpixcount <= vpixcount + 1;
+	END IF;
 End if;
 
 -- Generate Vertical Sync Signal
