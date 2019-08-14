@@ -113,10 +113,9 @@ end process Color_COMPUTE;
 
 --Generate Horizontal and Vertical Timing Signals for Video Signal
 --For details see Rapid Prototyping of Digital Systems Chapter 9
-VIDEO_DISPLAY: Process
+VIDEO_DISPLAY: Process(Clock_24Mhz)
 Begin
-Wait until(Clock_24Mhz'Event) and (Clock_24Mhz='1');
--- Clock enable used for a 24Mhz video clock rate
+ IF (Clock_24Mhz'event) and (Clock_24Mhz='1') Then
 -- 640 by 480 display mode needs close to a 25Mhz pixel clock
 -- 24Mhz should work on most new monitors
 -- H_count counts pixels (640 + extra time for sync signals)
@@ -131,7 +130,7 @@ Else
    H_count <= H_count + 1;
 	
 	
-	IF H_Count = 0 THEN
+	IF H_Count = ((640 - (160*3))/2) THEN
 		-- start of logical screen reached
 		hpixcount <= "00";
 		hpix <="00000000";
@@ -164,10 +163,10 @@ End if;
 --
 If (V_count >= 524) and (H_count >= 699) then
    V_count <= B"00000000000";
-Else If (H_count = 699) Then
-   V_count <= V_count + 1;
+ELSIF (H_count = 699) Then
+	V_count <= V_count + 1;
 	
-	IF V_Count = 0 THEN
+	IF V_Count = ((480 - (144*3))/2) THEN
 		-- start of logical screen reached
 		vpixcount <= "00";
 		vpix <="00000000";
@@ -205,8 +204,10 @@ ELSE
    video_on_V <= '0';
 End if;
 
-End if;
+
+end if; -- clock event
 end process VIDEO_DISPLAY;
+
 
 end behavior;
 
