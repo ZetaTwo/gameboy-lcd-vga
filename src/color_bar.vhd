@@ -20,6 +20,10 @@ end Color_Bar;
 architecture behavior of Color_Bar is
 
 TYPE color IS ARRAY ( 0 TO 3 ) OF STD_LOGIC_VECTOR( 2 DOWNTO 0 );
+
+TYPE screenLine is ARRAY(0 to 140) of STD_LOGIC_VECTOR(1 DOWNTO 0);
+type screenArray is ARRAY(0 to 140) of screenLine;
+
 SIGNAL color_palette			: color;
 
 -- Video Display Signals   
@@ -32,6 +36,8 @@ signal Color_map : std_logic_vector(2 DOWNTO 0);
 
 signal Bar_num :std_logic_vector(4 DOWNTO 0);
 signal Clock_24Mhz : std_logic;
+
+signal screenBuf : screenArray;
 
 begin           
 -- A 2X pixel clock is used to produce more colors by turning color signals on and off
@@ -49,6 +55,8 @@ Color_palette(0) <= "000"; -- black
 Color_palette(1) <= "001"; -- blue
 Color_palette(2) <= "011"; -- cyan
 Color_palette(3) <= "111"; -- white
+
+screenBuf(10)(10) <= "11";
 
 -- video_on turns off pixel color data when not in the pixel view area
 video_on <= video_on_H and video_on_V;
@@ -72,7 +80,7 @@ Begin
 ---one logical pixel is 3x3 VGA pixels, so screen size is 480x432
 --- total VGA size is 640x480
 IF H_Count < 480 and V_Count < 432 THEN
-Color_map <= Color_palette((conv_integer(H_Count)/8 + (conv_integer(V_count)/4)) mod 4);
+Color_map <= Color_palette(conv_integer(screenBuf(conv_integer(H_Count)/4)(conv_integer(V_count)/4)));
 ELSE
 -- Fill up the background
 Color_map <= Color_palette((conv_integer(H_Count)/2 + (conv_integer(V_count)/2)) mod 4);
