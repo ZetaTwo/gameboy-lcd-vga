@@ -6,7 +6,7 @@ XFLAGS := --env "DISPLAY=$$DISPLAY" --volume="$$HOME/.Xauthority:/root/.Xauthori
 targets:
 	@echo "Try to make any of:"
 	@echo
-	@grep '^[^	]' Makefile
+	@grep '^[^	]' Makefile | grep -v ':='
 
 install:
 	time sudo docker build  --network=host -t quartus dockerizedBuildSystem
@@ -21,10 +21,12 @@ xterm:
 	$(DOCKER) $(XFLAGS) quartus xterm
 
 compile:
-	$(DOCKER) -ti quartus bash -c '/quartus/quartus/bin/quartus_cmd /src/color_bar.qpf -c color_bar'
+	$(DOCKER) -ti quartus bash -c '/quartus/quartus/bin/quartus_cmd /src/*.qpf -c gameboy_lcd_to_vga'
 
 flash:
-	$(DOCKER) quartus bash -c '/quartus/quartus/bin/quartus_cpf -c -q 10MHz -g 3.3 -n p /src/color_bar.cdf /src/color_bar.svf'
-	scp src/*.svf pimento.local:/tmp/toflash.svf
+	$(DOCKER) quartus bash -c '/quartus/quartus/bin/quartus_cpf -c -q 10MHz -g 3.3 -n p /src/*.cdf /src/toflash.svf'
+	scp src/toflash.svf pimento.local:/tmp/toflash.svf
 	ssh pimento.local /home/pi/JLink_Linux_V648b_arm/JTAGLoadExe /tmp/toflash.svf
 
+src/%.hex : src/%.bin
+	objcopy -I binary -O ihex $< $@
