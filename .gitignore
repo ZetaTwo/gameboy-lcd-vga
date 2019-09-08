@@ -8,6 +8,7 @@
 *.pof
 src/db
 src/incremental_db/
+src/greybox_tmp/
 *.smsg
 *.bak
 *.hex
