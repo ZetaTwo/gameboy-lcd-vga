@@ -5,7 +5,7 @@ use  IEEE.STD_LOGIC_UNSIGNED.all;
 
 entity lcd_decoder is
 
-   port( signal Clock_48Mhz : in std_logic;
+   port( signal Clock_100Mhz : in std_logic;
 		   signal gb_hsync, gb_vsync, gb_clock, gb_d0, gb_d1: in std_logic;
 		   signal ram_write_en : out std_logic;
 		  	signal ram_data : out std_logic_vector(1 downto 0);
@@ -50,12 +50,12 @@ begin
 	end if;
 end process;
 
-writeEn : process(gb_clock, clock_48Mhz)
+writeEn : process(gb_clock, Clock_100Mhz)
 begin
 	if gb_clock = '1' then
 		write_enable_counter <=  "0000";
 		ram_write_en <= '0';
-	elsif clock_48Mhz'event and clock_48Mhz = '1' then
+	elsif Clock_100Mhz'event and Clock_100Mhz = '1' then
 		if write_enable_counter < 4 then
 			ram_write_en <= '1';
 			write_enable_counter <= write_enable_counter + 1;
@@ -65,9 +65,9 @@ begin
 	end if;
 end process;
 
-vsyncHyst : process(gb_vsync, clock_48Mhz)
+vsyncHyst : process(gb_vsync, Clock_100Mhz)
 begin
-	if clock_48Mhz'event and clock_48Mhz = '1' then
+	if Clock_100Mhz'event and Clock_100Mhz = '1' then
 		if gb_vsync_int = gb_vsync then
 			vsync_counter <=  "0000";
 		else
