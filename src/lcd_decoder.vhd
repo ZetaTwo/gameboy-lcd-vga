@@ -16,7 +16,7 @@ end lcd_decoder;
 architecture behavior of lcd_decoder is
 
 signal gb_xpos, gb_ypos : std_logic_vector(7 downto 0);
-signal gb_hsync_prev, gb_clock_prev: std_logic;
+signal write_enable_counter : std_logic_vector(3 downto 0);
 
 begin
 
@@ -27,49 +27,42 @@ ram_data <= gb_d1 & gb_d0;
 -- 160 == 1<<7 + 1<<5
 ram_write_address <= (gb_ypos&"0000000") + ("00"&gb_ypos&"00000") + ("0000000" & gb_xpos);
 
-GB_input: Process (clock_48Mhz)
-Begin
- IF (clock_48Mhz'event) and (clock_48Mhz='1') Then
- 
- if gb_vsync = '1' then
-	gb_xpos <= "00000000";
-	gb_ypos <= "00000000";
-	ram_write_en <= '0';
- else
-	-- no vsync
+horizontal : process(gb_clock, gb_hsync)
+begin
 	if gb_hsync = '1' then
-	   gb_xpos <= "00000000";
-		ram_write_en <= '0';
-		if gb_hsync_prev = '0' then
-			if gb_ypos < 144 then
-				gb_ypos <= gb_ypos + 1;
-			end if;
-			gb_hsync_prev <= '1';
+		gb_xpos <=  "00000000";
+	elsif gb_clock'event and gb_clock = '1' then
+		if gb_xpos < 160 then
+			gb_xpos <= gb_xpos + 1;
 		end if;
-	else
-	   gb_hsync_prev <= '0';
-		if gb_clock = '0' then
-			if gb_clock_prev = '1' then
-				-- falling edge
-				if gb_xpos < 160 then
-					gb_xpos <= gb_xpos + 1;
-					ram_write_en <= '1';
-				else
-					ram_write_en <= '0';
-				end if;
-				gb_clock_prev <= '0';
-			else
-				ram_write_en <= '0';
-			end if; -- gbclockprev
+	end if;
+end process;
+
+vertical : process(gb_hsync, gb_vsync)
+begin
+	if gb_vsync = '1' then
+		gb_ypos <=  "00000000";
+	elsif gb_hsync'event and gb_hsync = '1' then
+		if gb_ypos < 144 then
+			gb_ypos <= gb_ypos + 1;
+		end if;
+	end if;
+end process;
+
+writeEn : process(gb_clock, clock_48Mhz)
+begin
+	if gb_clock = '1' then
+		write_enable_counter <=  "0000";
+		ram_write_en <= '0';
+	elsif clock_48Mhz'event and clock_48Mhz = '1' then
+		if write_enable_counter < 4 then
+			ram_write_en <= '1';
+			write_enable_counter <= write_enable_counter + 1;
 		else
 			ram_write_en <= '0';
-			gb_clock_prev <= '1';
-		end if; -- gbclock
-	end if; -- gbhsync
-end if; -- vsync
-
-END IF;
-end process GB_input;
+		end if;
+	end if;
+end process;
 
 end behavior;
 
