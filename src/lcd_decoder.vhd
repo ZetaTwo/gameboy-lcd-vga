@@ -16,7 +16,8 @@ end lcd_decoder;
 architecture behavior of lcd_decoder is
 
 signal gb_xpos, gb_ypos : std_logic_vector(7 downto 0);
-signal write_enable_counter : std_logic_vector(3 downto 0);
+signal gb_vsync_int : std_logic;
+signal write_enable_counter, vsync_counter : std_logic_vector(3 downto 0);
 
 begin
 
@@ -38,9 +39,9 @@ begin
 	end if;
 end process;
 
-vertical : process(gb_hsync, gb_vsync)
+vertical : process(gb_hsync, gb_vsync_int)
 begin
-	if gb_vsync = '1' then
+	if gb_vsync_int = '1' then
 		gb_ypos <=  "00000000";
 	elsif gb_hsync'event and gb_hsync = '1' then
 		if gb_ypos < 144 then
@@ -60,6 +61,23 @@ begin
 			write_enable_counter <= write_enable_counter + 1;
 		else
 			ram_write_en <= '0';
+		end if;
+	end if;
+end process;
+
+vsyncHyst : process(gb_vsync, clock_48Mhz)
+begin
+	if clock_48Mhz'event and clock_48Mhz = '1' then
+		if gb_vsync_int = gb_vsync then
+			vsync_counter <=  "0000";
+		else
+			if vsync_counter < 10 then
+				vsync_counter <= vsync_counter + 1;
+			else
+				-- counter has reached target value
+				gb_vsync_int <= gb_vsync;
+				vsync_counter <=  "0000";
+			end if;
 		end if;
 	end if;
 end process;
