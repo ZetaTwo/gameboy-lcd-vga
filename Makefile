@@ -1,6 +1,6 @@
 
 
-DOCKER := sudo docker run --net=host --volume="$$PWD/src/:/src/:rw"
+DOCKER := docker run --net=host --volume="$$PWD/src/:/src/:rw"
 XFLAGS := --env "DISPLAY=$$DISPLAY" --volume="$$HOME/.Xauthority:/root/.Xauthority:rw"
 
 targets:
@@ -9,7 +9,7 @@ targets:
 	@grep '^[^	]' Makefile | grep -v ':='
 
 install:
-	time sudo docker build  --network=host -t quartus dockerizedBuildSystem
+	time docker build  --network=host -t quartus dockerizedBuildSystem
 
 bash:
 	$(DOCKER) -ti quartus bash
@@ -25,8 +25,7 @@ compile:
 
 flash:
 	$(DOCKER) quartus bash -c '/quartus/quartus/bin/quartus_cpf -c -q 10MHz -g 3.3 -n p /src/*.cdf /src/toflash.svf'
-	scp src/toflash.svf pimento.local:/tmp/toflash.svf
-	ssh pimento.local /home/pi/JLink_Linux_V648b_arm/JTAGLoadExe /tmp/toflash.svf
+	sudo JTAGLoadExe src/toflash.svf
 
 src/%.hex : src/%.bin
 	objcopy -I binary -O ihex $< $@
