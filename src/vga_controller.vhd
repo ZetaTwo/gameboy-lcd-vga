@@ -71,7 +71,7 @@ signal H_count, V_count: natural range 0 to 2000;
 signal Red_Data, Green_Data, Blue_Data : std_logic;
 
 
-signal Horiz_Sync_int, Vert_Sync_int : std_logic;
+signal Horiz_Sync_int, Vert_Sync_int : boolean;
 signal vpixCount, hpixCount : natural range 0 to SCALE;
 signal Color_map : std_logic_vector(2 DOWNTO 0);
 signal hpix, vpix : std_logic_vector(7 DOWNTO 0);
@@ -107,16 +107,30 @@ Color_palette(1) <= "011"; -- blue
 Color_palette(2) <= "001"; -- cyan
 Color_palette(3) <= "000"; -- white
 
-video_on_H <= (H_count >= 0) and (H_count < H_SIZE);
-video_on_V <= (V_count >= 0) and (V_count < V_SIZE);
+Red_Data <= Color_map(2);
+Green_Data <= Color_map(1);
+Blue_Data <= Color_map(0);
+
+video_on_H <= H_count < H_SIZE;
+video_on_V <= V_count < V_SIZE;
 video_on <= video_on_H and video_on_V;
 
+Horiz_Sync_int <= (H_count >= (H_SIZE+H_BACK)) and (H_count < (H_SIZE+H_BACK+H_SYNC));
+Vert_Sync_int <= (V_count >= (V_SIZE+V_BACK)) and (V_count < (V_SIZE+V_BACK+V_SYNC));
 
--- video_on turns off pixel color data when not in the pixel view area
---video_on <= video_on_H and video_on_V;
+with video_on select Red <= Red_Data when true, '0' when false;
+with video_on select Green <= Green_Data when true, '0' when false;
+with video_on select Blue <= Blue_Data when true, '0' when false;
 
--- This process computes a color to each pixel as the image is scanned by the monitor
--- no pixel memory is used.
+with Horiz_Sync_int select Horiz_Sync <= H_POL when true, not H_POL when false;
+with Vert_Sync_int select Vert_Sync <= V_POL when true, not V_POL when false;
+
+
+-- I could not get multipliation nor left shift to work properly...
+-- read_address <= vpix*160 + hpix
+-- 160 == 1<<7 + 1<<5
+read_address <= (vpix&"0000000") + ("00"&vpix&"00000") + ("0000000" & hpix);
+
 
 CLOCK_DIVIDE: Process
 Begin
@@ -151,10 +165,7 @@ end process CLOCK_DIVIDE4;
 
 Clock_40MHz <= Clock_20MHz or Clock_20MHz_d15;
 
--- I could not get multipliation nor left shift to work properly...
--- read_address <= vpix*160 + hpix
--- 160 == 1<<7 + 1<<5
-read_address <= (vpix&"0000000") + ("00"&vpix&"00000") + ("0000000" & hpix);
+
 
 Color_COMPUTE: Process (Clock_100Mhz)
 Begin
@@ -167,32 +178,8 @@ ELSE
 	Color_map <= Color_palette((conv_integer(H_Count)/2 + (conv_integer(V_count)/2)) mod 4);
 END IF;
 
--- Set each RGB color signal to 100%(on), 50%(1-0 with 2X clock), or 0%(off)
--- A 0-1 pixel color is reversed to 1-0 on alternate rows and
--- alternate scans to reduce flicker.
-
-	Red_Data <= Color_map(2);
-	Green_Data <= Color_map(1);
-	Blue_Data <= Color_map(0);
-
--- turn off color (black) at screen edges and during retrace with video_on
--- feed final outputs through registers to adjust for any timing delays
-if video_on then
- Red   <= Red_Data;
- Green <= Green_Data;
- Blue  <= Blue_Data;
-else
- Red   <= '0';
- Green <= '0';
- Blue  <= '0';
-end if;
- 
- Horiz_Sync <= Horiz_Sync_int;
- Vert_Sync <= Vert_Sync_int;
-
 END IF;
 end process Color_COMPUTE;
-
 
 --Generate Horizontal and Vertical Timing Signals for Video Signal
 --For details see Rapid Prototyping of Digital Systems Chapter 9
@@ -247,24 +234,8 @@ ELSIF (H_count = 0) Then
 	END IF;
 End if;
 
---Generate Horizontal Sync Signal
-If (H_count >= (H_SIZE+H_BACK)) and (H_count < (H_SIZE+H_BACK+H_SYNC)) Then
-   Horiz_Sync_int <= H_POL;
-ELSE
-   Horiz_Sync_int <= not H_POL;
-End if;
-
--- Generate Vertical Sync Signal
-If (V_count >= (V_SIZE+V_BACK)) and (V_count < (V_SIZE+V_BACK+V_SYNC)) Then
-   Vert_Sync_int <= V_POL;
-ELSE
-   Vert_Sync_int <= not V_POL;
-End if;
-
-
 end if; -- clock event
 end process VIDEO_DISPLAY;
-
 
 end behavior;
 
