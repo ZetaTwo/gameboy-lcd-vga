@@ -34,7 +34,6 @@ applicable agreement for further details.
 		(line (pt 117 12)(pt 121 8))
 	)
 	(text "VCC" (rect 136 7 157 17)(font "Arial" (font_size 6)))
-	(annotation_block (location)(rect -96 256 -32 272))
 )
 (pin
 	(input)
@@ -51,7 +50,6 @@ applicable agreement for further details.
 		(line (pt 117 12)(pt 121 8))
 	)
 	(text "VCC" (rect 136 7 157 17)(font "Arial" (font_size 6)))
-	(annotation_block (location)(rect -32 112 32 128))
 )
 (pin
 	(input)
@@ -68,7 +66,6 @@ applicable agreement for further details.
 		(line (pt 117 12)(pt 121 8))
 	)
 	(text "VCC" (rect 136 7 157 17)(font "Arial" (font_size 6)))
-	(annotation_block (location)(rect -32 80 32 96))
 )
 (pin
 	(input)
@@ -85,7 +82,6 @@ applicable agreement for further details.
 		(line (pt 117 12)(pt 121 8))
 	)
 	(text "VCC" (rect 136 7 157 17)(font "Arial" (font_size 6)))
-	(annotation_block (location)(rect -32 144 32 160))
 )
 (pin
 	(input)
@@ -102,7 +98,6 @@ applicable agreement for further details.
 		(line (pt 117 12)(pt 121 8))
 	)
 	(text "VCC" (rect 136 7 157 17)(font "Arial" (font_size 6)))
-	(annotation_block (location)(rect -32 176 32 192))
 )
 (pin
 	(input)
@@ -119,7 +114,6 @@ applicable agreement for further details.
 		(line (pt 117 12)(pt 121 8))
 	)
 	(text "VCC" (rect 136 7 157 17)(font "Arial" (font_size 6)))
-	(annotation_block (location)(rect -32 208 32 224))
 )
 (pin
 	(output)
@@ -136,7 +130,6 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1560 80 1624 96))
 )
 (pin
 	(output)
@@ -153,7 +146,6 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1560 112 1624 128))
 )
 (pin
 	(output)
@@ -170,7 +162,6 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1560 144 1624 160))
 )
 (pin
 	(output)
@@ -187,7 +178,6 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1560 176 1624 192))
 )
 (pin
 	(output)
@@ -204,7 +194,6 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1560 208 1624 224))
 )
 (symbol
 	(rect 1040 48 1328 208)
@@ -630,6 +619,18 @@ applicable agreement for further details.
 	(pt 232 104)
 )
 (connector
+	(pt 272 80)
+	(pt 272 248)
+)
+(connector
+	(pt 144 248)
+	(pt 272 248)
+)
+(connector
+	(pt 272 248)
+	(pt 672 248)
+)
+(connector
 	(pt 632 128)
 	(pt 688 128)
 )
@@ -676,18 +677,6 @@ applicable agreement for further details.
 (connector
 	(pt 208 200)
 	(pt 248 200)
-)
-(connector
-	(pt 272 80)
-	(pt 272 248)
-)
-(connector
-	(pt 144 248)
-	(pt 272 248)
-)
-(connector
-	(pt 272 248)
-	(pt 672 248)
 )
 (junction (pt 672 248))
 (junction (pt 688 128))
