@@ -36,13 +36,11 @@ constant GB_HEIGHT : integer := 144;
 --constant H_SYNC : integer := 96;
 --constant H_BACK : integer := 48;
 --constant H_POL : std_logic := '0';
-
 --constant V_SIZE : integer := 480;
 --constant V_FRONT : integer := 10;
 --constant V_SYNC: integer := 2;
 --constant V_BACK : integer := 33;
 --constant V_POL : std_logic := '0';
-
 
 -- 800x600
 constant H_SIZE : integer := 800;
@@ -50,13 +48,11 @@ constant H_FRONT : integer := 56;
 constant H_SYNC : integer := 120;
 constant H_BACK : integer := 64;
 constant H_POL : std_logic := '1';
-
 constant V_SIZE : integer := 600;
 constant V_FRONT : integer := 37;
 constant V_SYNC: integer := 6;
 constant V_BACK : integer := 23;
 constant V_POL : std_logic := '1';
-
 
 -- 1280x960
 --constant H_SIZE : integer := 1280;
@@ -70,32 +66,29 @@ constant V_POL : std_logic := '1';
 --constant V_BACK : integer := 30;
 --constant V_POL : std_logic := '1';
 
-
 -- Video Display Signals   
-signal H_count,V_count: std_logic_vector(10 Downto 0);
-signal Red_Data, Green_Data, Blue_Data, video_on : std_logic;
-signal video_on_H, video_on_V : std_logic;
+signal H_count, V_count: natural range 0 to 2000;
+signal Red_Data, Green_Data, Blue_Data : std_logic;
+
+
 signal Horiz_Sync_int, Vert_Sync_int : std_logic;
-signal vpixCount, hpixCount : std_logic_vector(1 DOWNTO 0);
+signal vpixCount, hpixCount : natural range 0 to SCALE;
 signal Color_map : std_logic_vector(2 DOWNTO 0);
 signal hpix, vpix : std_logic_vector(7 DOWNTO 0);
 signal Clock_50Mhz : std_logic;
 signal Clock_25Mhz : std_logic;
 
-signal div_clk : std_logic_vector(2 DOWNTO 0);
+signal div_clk : natural range 0 to 4;
 signal Clock_20MHz : std_logic;
 signal Clock_40MHz : std_logic;
 signal Clock_20MHz_d1 : std_logic;
 signal Clock_20MHz_d15 : std_logic;
 
-signal vinrange, hinrange : std_logic;
+signal vinrange, hinrange : boolean;
+signal video_on_H, video_on_V, video_on : boolean;
 
 
 begin           
-
-
-
-
 
 
 -- A 2X pixel clock is used to produce more colors by turning color signals on and off
@@ -114,9 +107,13 @@ Color_palette(1) <= "011"; -- blue
 Color_palette(2) <= "001"; -- cyan
 Color_palette(3) <= "000"; -- white
 
+video_on_H <= (H_count >= 0) and (H_count < H_SIZE);
+video_on_V <= (V_count >= 0) and (V_count < V_SIZE);
+video_on <= video_on_H and video_on_V;
+
 
 -- video_on turns off pixel color data when not in the pixel view area
-video_on <= video_on_H and video_on_V;
+--video_on <= video_on_H and video_on_V;
 
 -- This process computes a color to each pixel as the image is scanned by the monitor
 -- no pixel memory is used.
@@ -137,7 +134,7 @@ CLOCK_DIVIDE3: Process
 Begin
 Wait until(Clock_100Mhz'Event) and (Clock_100Mhz='1');
 	if div_clk = 4 then
-	  div_clk <= "000";
+	  div_clk <= 0;
 	  Clock_20MHz <= '1';
 	else
 	  div_clk <= div_clk + 1;
@@ -159,15 +156,11 @@ Clock_40MHz <= Clock_20MHz or Clock_20MHz_d15;
 -- 160 == 1<<7 + 1<<5
 read_address <= (vpix&"0000000") + ("00"&vpix&"00000") + ("0000000" & hpix);
 
-
 Color_COMPUTE: Process (Clock_100Mhz)
 Begin
  IF (Clock_100Mhz'event) and (Clock_100Mhz='1') Then
  
--- Gameboy display is 160 x 144 pixels
----one logical pixel is 3x3 VGA pixels, so screen size is 480x432
---- total VGA size is 640x480
-IF hinrange = '1' and vinrange = '1' THEN
+IF hinrange and vinrange THEN
 	Color_map <= Color_palette(conv_integer(ram_data));
 ELSE
 -- Fill up the background
@@ -184,10 +177,16 @@ END IF;
 
 -- turn off color (black) at screen edges and during retrace with video_on
 -- feed final outputs through registers to adjust for any timing delays
- Red <=   Red_Data and video_on;
- Green <= Green_Data and video_on;
- Blue <=  Blue_Data and video_on;
-
+if video_on then
+ Red   <= Red_Data;
+ Green <= Green_Data;
+ Blue  <= Blue_Data;
+else
+ Red   <= '0';
+ Green <= '0';
+ Blue  <= '0';
+end if;
+ 
  Horiz_Sync <= Horiz_Sync_int;
  Vert_Sync <= Vert_Sync_int;
 
@@ -206,42 +205,42 @@ If (H_count < (H_SIZE+H_FRONT+H_SYNC+H_BACK)) then
 	
 	IF H_Count = ((H_SIZE - (GB_WIDTH*SCALE))/2) THEN
 		-- start of logical screen reached
-		hpixcount <= "00";
+		hpixcount <= 0;
 		hpix <="00000000";
-		hinrange <= '1';
+		hinrange <= true;
 	ELSIF hpixcount = (SCALE-1) THEN
 		-- divide by three counter reached tick
-		hpixcount <= "00";
+		hpixcount <= 0;
 		IF hpix < (GB_WIDTH-1) THEN
 			hpix <= hpix + 1;
 		ELSE
-			hinrange <= '0';
+			hinrange <= false;
 		END IF;
 	ELSE
 		hpixcount <= hpixcount + 1;
 	END IF;
 	
 Else
-   H_count <= B"00000000000";
+   H_count <= 0;
 End if;
 
 If (V_count >= V_SIZE+V_FRONT+V_SYNC+V_BACK) then
-   V_count <= B"00000000000";
+   V_count <= 0;
 ELSIF (H_count = 0) Then
 	V_count <= V_count + 1;
 	
 	IF V_Count = ((V_SIZE - (GB_HEIGHT*SCALE))/2) THEN
 		-- start of logical screen reached
-		vpixcount <= "00";
+		vpixcount <= 0;
 		vpix <="00000000";
-		vinrange <= '1';
+		vinrange <= true;
 	ELSIF vpixcount = (SCALE-1) THEN
 		-- divide by three counter reached tick
-		vpixcount <= "00";
+		vpixcount <= 0;
 		IF vpix < (GB_HEIGHT-1) THEN
 			vpix <= vpix + 1;
 		ELSE
-			vinrange <= '0';
+			vinrange <= false;
 		END IF;
 	ELSE
 		vpixcount <= vpixcount + 1;
@@ -260,19 +259,6 @@ If (V_count >= (V_SIZE+V_BACK)) and (V_count < (V_SIZE+V_BACK+V_SYNC)) Then
    Vert_Sync_int <= V_POL;
 ELSE
    Vert_Sync_int <= not V_POL;
-End if;
-
--- Generate Video on Screen Signals for Pixel Data
-If (H_count >= 0) and (H_count < H_SIZE) Then
-   video_on_H <= '1';
-ELSE
-   video_on_H <= '0';
-End if;
-
-If (V_count >= 0) and (V_count < V_SIZE) Then
-   video_on_V <= '1';
-ELSE
-   video_on_V <= '0';
 End if;
 
 
