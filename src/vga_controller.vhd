@@ -78,12 +78,6 @@ signal hpix, vpix : std_logic_vector(7 DOWNTO 0);
 signal Clock_50Mhz : std_logic;
 signal Clock_25Mhz : std_logic;
 
-signal div_clk : natural range 0 to 4;
-signal Clock_20MHz : std_logic;
-signal Clock_40MHz : std_logic;
-signal Clock_20MHz_d1 : std_logic;
-signal Clock_20MHz_d15 : std_logic;
-
 signal vinrange, hinrange : boolean;
 signal video_on_H, video_on_V, video_on : boolean;
 
@@ -125,6 +119,9 @@ with video_on select Blue <= Blue_Data when true, '0' when false;
 with Horiz_Sync_int select Horiz_Sync <= H_POL when true, not H_POL when false;
 with Vert_Sync_int select Vert_Sync <= V_POL when true, not V_POL when false;
 
+with hinrange and vinrange select
+    Color_map <= Color_palette(conv_integer(ram_data)) when true,
+	              Color_palette((conv_integer(H_Count)/2 + (conv_integer(V_count)/2)) mod 4) when false;
 
 -- I could not get multipliation nor left shift to work properly...
 -- read_address <= vpix*160 + hpix
@@ -144,42 +141,6 @@ Wait until(Clock_50Mhz'Event) and (Clock_50Mhz='1');
 	Clock_25Mhz <= NOT Clock_25Mhz;
 end process CLOCK_DIVIDE2;
 
-CLOCK_DIVIDE3: Process
-Begin
-Wait until(Clock_100Mhz'Event) and (Clock_100Mhz='1');
-	if div_clk = 4 then
-	  div_clk <= 0;
-	  Clock_20MHz <= '1';
-	else
-	  div_clk <= div_clk + 1;
-	  Clock_20MHz <= '0';
-	end if;
-	Clock_20MHz_d1 <= Clock_20MHz;
-end process CLOCK_DIVIDE3;
-
-CLOCK_DIVIDE4: Process
-Begin
-Wait until(Clock_100Mhz'Event) and (Clock_100Mhz='0');
-	Clock_20MHz_d15 <= Clock_20MHz_d1;
-end process CLOCK_DIVIDE4;
-
-Clock_40MHz <= Clock_20MHz or Clock_20MHz_d15;
-
-
-
-Color_COMPUTE: Process (Clock_100Mhz)
-Begin
- IF (Clock_100Mhz'event) and (Clock_100Mhz='1') Then
- 
-IF hinrange and vinrange THEN
-	Color_map <= Color_palette(conv_integer(ram_data));
-ELSE
--- Fill up the background
-	Color_map <= Color_palette((conv_integer(H_Count)/2 + (conv_integer(V_count)/2)) mod 4);
-END IF;
-
-END IF;
-end process Color_COMPUTE;
 
 --Generate Horizontal and Vertical Timing Signals for Video Signal
 --For details see Rapid Prototyping of Digital Systems Chapter 9
