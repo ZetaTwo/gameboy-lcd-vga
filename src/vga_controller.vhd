@@ -26,26 +26,49 @@ TYPE color IS ARRAY ( 0 TO 3 ) OF STD_LOGIC_VECTOR( 2 DOWNTO 0 );
 
 SIGNAL color_palette			: color;
 
+constant SCALE : integer := 4;
+constant GB_WIDTH : integer := 160;
+constant GB_HEIGHT : integer := 144;
 
+-- 640x480
+--constant H_SIZE : integer := 640;
+--constant H_FRONT : integer := 16;
+--constant H_SYNC : integer := 96;
+--constant H_BACK : integer := 48;
+--constant H_POL : std_logic := '0';
+
+--constant V_SIZE : integer := 480;
+--constant V_FRONT : integer := 10;
+--constant V_SYNC: integer := 2;
+--constant V_BACK : integer := 33;
+--constant V_POL : std_logic := '0';
+
+
+-- 800x600
 constant H_SIZE : integer := 800;
 constant H_FRONT : integer := 56;
 constant H_SYNC : integer := 120;
 constant H_BACK : integer := 64;
+constant H_POL : std_logic := '1';
 
 constant V_SIZE : integer := 600;
 constant V_FRONT : integer := 37;
 constant V_SYNC: integer := 6;
 constant V_BACK : integer := 23;
+constant V_POL : std_logic := '1';
 
--- constant H_SIZE : integer := 1280;
--- constant H_FRONT : integer := 80;
--- constant H_SYNC : integer := 136;
--- constant H_BACK : integer := 216;
 
--- constant V_SIZE : integer := 960;
--- constant V_FRONT : integer := 1;
--- constant V_SYNC: integer := 3;
--- constant V_BACK : integer := 30;
+-- 1280x960
+--constant H_SIZE : integer := 1280;
+--constant H_FRONT : integer := 80;
+--constant H_SYNC : integer := 136;
+--constant H_BACK : integer := 216;
+--constant H_POL : std_logic := '0';
+--constant V_SIZE : integer := 960;
+--constant V_FRONT : integer := 1;
+--constant V_SYNC: integer := 3;
+--constant V_BACK : integer := 30;
+--constant V_POL : std_logic := '1';
 
 
 -- Video Display Signals   
@@ -177,26 +200,19 @@ end process Color_COMPUTE;
 VIDEO_DISPLAY: Process(Clock_50Mhz)
 Begin
  IF (Clock_50Mhz'event) and (Clock_50Mhz='1') Then
--- 640 by 480 display mode needs close to a 25Mhz pixel clock
--- 24Mhz should work on most new monitors
--- H_count counts pixels (640 + extra time for sync signals)
---
---   <-Clock out RGB Pixel Row Data ->   <-H Sync->
---   ------------------------------------__________--------
---   0                           640   659       755    799
---
+
 If (H_count < (H_SIZE+H_FRONT+H_SYNC+H_BACK)) then
 	H_count <= H_count + 1;
 	
-	IF H_Count = ((H_SIZE - (160*4))/2) THEN
+	IF H_Count = ((H_SIZE - (GB_WIDTH*SCALE))/2) THEN
 		-- start of logical screen reached
 		hpixcount <= "00";
 		hpix <="00000000";
 		hinrange <= '1';
-	ELSIF hpixcount = 3 THEN
+	ELSIF hpixcount = (SCALE-1) THEN
 		-- divide by three counter reached tick
 		hpixcount <= "00";
-		IF hpix < 159 THEN
+		IF hpix < (GB_WIDTH-1) THEN
 			hpix <= hpix + 1;
 		ELSE
 			hinrange <= '0';
@@ -209,33 +225,20 @@ Else
    H_count <= B"00000000000";
 End if;
 
---Generate Horizontal Sync Signal
-If (H_count >= (H_SIZE+H_BACK)) and (H_count < (H_SIZE+H_BACK+H_SYNC)) Then
-   Horiz_Sync_int <= '1';
-ELSE
-   Horiz_Sync_int <= '0';
-End if;
-
---V_count counts rows of pixels (480 + extra time for sync signals)
---
---  <---- 480 Horizontal Syncs (pixel rows) -->  ->V Sync<-
---  -----------------------------------------------_______------------
---  0                                       480    493-494          524
---
 If (V_count >= V_SIZE+V_FRONT+V_SYNC+V_BACK) then
    V_count <= B"00000000000";
-ELSIF (H_count = H_SIZE+H_BACK+H_SYNC+H_FRONT) Then
+ELSIF (H_count = 0) Then
 	V_count <= V_count + 1;
 	
-	IF V_Count = ((V_SIZE - (144*4))/2) THEN
+	IF V_Count = ((V_SIZE - (GB_HEIGHT*SCALE))/2) THEN
 		-- start of logical screen reached
 		vpixcount <= "00";
 		vpix <="00000000";
 		vinrange <= '1';
-	ELSIF vpixcount = 3 THEN
+	ELSIF vpixcount = (SCALE-1) THEN
 		-- divide by three counter reached tick
 		vpixcount <= "00";
-		IF vpix < 143 THEN
+		IF vpix < (GB_HEIGHT-1) THEN
 			vpix <= vpix + 1;
 		ELSE
 			vinrange <= '0';
@@ -245,11 +248,18 @@ ELSIF (H_count = H_SIZE+H_BACK+H_SYNC+H_FRONT) Then
 	END IF;
 End if;
 
+--Generate Horizontal Sync Signal
+If (H_count >= (H_SIZE+H_BACK)) and (H_count < (H_SIZE+H_BACK+H_SYNC)) Then
+   Horiz_Sync_int <= H_POL;
+ELSE
+   Horiz_Sync_int <= not H_POL;
+End if;
+
 -- Generate Vertical Sync Signal
 If (V_count >= (V_SIZE+V_BACK)) and (V_count < (V_SIZE+V_BACK+V_SYNC)) Then
-   Vert_Sync_int <= '1';
+   Vert_Sync_int <= V_POL;
 ELSE
-   Vert_Sync_int <= '0';
+   Vert_Sync_int <= not V_POL;
 End if;
 
 -- Generate Video on Screen Signals for Pixel Data
