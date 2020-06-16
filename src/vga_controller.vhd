@@ -26,7 +26,7 @@ TYPE color IS ARRAY ( 0 TO 3 ) OF STD_LOGIC_VECTOR( 2 DOWNTO 0 );
 
 SIGNAL color_palette			: color;
 
-constant SCALE : integer := 4;
+constant SCALE : integer := 3;
 constant GB_WIDTH : integer := 160;
 constant GB_HEIGHT : integer := 144;
 
@@ -43,28 +43,28 @@ constant GB_HEIGHT : integer := 144;
 --constant V_POL : std_logic := '0';
 
 -- 800x600
-constant H_SIZE : integer := 800;
-constant H_FRONT : integer := 56;
-constant H_SYNC : integer := 120;
-constant H_BACK : integer := 64;
-constant H_POL : std_logic := '1';
-constant V_SIZE : integer := 600;
-constant V_FRONT : integer := 37;
-constant V_SYNC: integer := 6;
-constant V_BACK : integer := 23;
-constant V_POL : std_logic := '1';
+--constant H_SIZE : integer := 800;
+--constant H_FRONT : integer := 56;
+--constant H_SYNC : integer := 120;
+--constant H_BACK : integer := 64;
+--constant H_POL : std_logic := '1';
+--constant V_SIZE : integer := 600;
+--constant V_FRONT : integer := 37;
+--constant V_SYNC: integer := 6;
+--constant V_BACK : integer := 23;
+--constant V_POL : std_logic := '1';
 
 -- 1280x960
---constant H_SIZE : integer := 1280;
---constant H_FRONT : integer := 80;
---constant H_SYNC : integer := 136;
---constant H_BACK : integer := 216;
---constant H_POL : std_logic := '0';
---constant V_SIZE : integer := 960;
---constant V_FRONT : integer := 1;
---constant V_SYNC: integer := 3;
---constant V_BACK : integer := 30;
---constant V_POL : std_logic := '1';
+constant H_SIZE : integer := 1280;
+constant H_FRONT : integer := 80;
+constant H_SYNC : integer := 136;
+constant H_BACK : integer := 216;
+constant H_POL : std_logic := '0';
+constant V_SIZE : integer := 960;
+constant V_FRONT : integer := 1;
+constant V_SYNC: integer := 3;
+constant V_BACK : integer := 30;
+constant V_POL : std_logic := '1';
 
 -- Video Display Signals   
 signal H_count, V_count: natural range 0 to 2000;
@@ -144,9 +144,9 @@ end process CLOCK_DIVIDE2;
 
 --Generate Horizontal and Vertical Timing Signals for Video Signal
 --For details see Rapid Prototyping of Digital Systems Chapter 9
-VIDEO_DISPLAY: Process(Clock_50Mhz)
+VIDEO_DISPLAY: Process(Clock_100Mhz)
 Begin
- IF (Clock_50Mhz'event) and (Clock_50Mhz='1') Then
+ IF (Clock_100Mhz'event) and (Clock_100Mhz='1') Then
 
 If (H_count < (H_SIZE+H_FRONT+H_SYNC+H_BACK)) then
 	H_count <= H_count + 1;
